@@ -1,0 +1,103 @@
+package analizadorLexico;
+import java.util.ArrayList;
+import java_cup.runtime.Symbol;
+
+
+parser code {:
+
+public static ArrayList<Symbol> errorSintatico;
+    
+    
+    public void syntax_error(Symbol s){
+        System.out.println("Error R de sintaxis: "+ s.value +" Linea "+(s.left+1)+" columna "+(s.right+1) );
+errorSintatico.add(s);
+    }
+    public void unrecovered_syntax_error(Symbol s) throwsjava.lang.Exception{System.out.println("La Cadena:" +s.value+" en la Linea:"+(s.right+1) +" ,Columna: "+s.left+"esta fuera de contexto." ); }
+
+
+:}
+  
+/* Terminals (tokens returned by the scanner). */
+
+terminal           closefolder,closeproject,folder,project,file,
+                   name,path,space,extension,mayor,menor,comillas,
+                   equals,slash,point,HOME;
+
+terminal String    ID,ERROR;
+/* Non-terminals */
+
+non terminal            PJ,ATRIBUTES,DATAS,ABSOLUTEPATH,EXT,D,SPACE, C, E,F, G, H, I, J;
+
+
+
+/* The grammar */
+start with PJ;
+   PJ ::=SPACE menor SPACE project space SPACE name SPACE equals SPACE comillas  ID
+   comillas SPACE mayor SPACE ATRIBUTES  closeproject 
+  | error  name SPACE
+  | error  equals SPACE
+  | error  comillas SPACE  
+  | error  mayor  ATRIBUTES
+  ;
+//-------------------->
+  ATRIBUTES ::= menor SPACE DATAS 
+   |        
+   ;
+//-------------------->
+   DATAS ::= 
+   file space SPACE F
+   | folder space SPACE E 
+   | error  SPACE E
+   | error  SPACE F
+ 
+   ;
+//-------------------->
+   ABSOLUTEPATH ::= slash HOME slash ID EXT
+   | error ID EXT
+   ;
+//-------------------->
+   EXT ::= point:e1 extension:e2 
+    |  D:e 
+    | error 
+    ;
+//-------------------->
+   D ::= slash ID:e2 EXT:e3
+    | error slash EXT
+
+;
+
+//-------------------->
+    SPACE ::= space SPACE
+    |
+
+    ;
+//--------------------->
+    C ::= mayor
+     SPACE ATRIBUTES  closefolder SPACE  ATRIBUTES;
+
+//--------------------->
+
+     E ::= name SPACE equals SPACE comillas ID comillas C
+    | error name SPACE 
+    | error equals SPACE  
+    | error comillas C; 
+
+//--------------------->
+    F ::= name SPACE equals G
+    | error equals G;
+
+//--------------------->
+    G ::= SPACE comillas ID comillas 
+   space H
+    | error space H
+    ;
+
+    H ::= SPACE  path SPACE equals SPACE comillas I
+    | error comillas I;
+
+    I ::= ABSOLUTEPATH comillas
+   slash mayor  J
+     | error mayor J   
+;
+    
+    J ::= SPACE ATRIBUTES;

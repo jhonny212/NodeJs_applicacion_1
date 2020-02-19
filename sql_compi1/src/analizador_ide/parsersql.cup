@@ -1,0 +1,308 @@
+package analizador_ide;
+
+import java_cup.runtime.Symbol;
+
+//PARSER 
+parser code
+{://Codigo visible
+    public static ArrayList<String> arraycolumnas;
+    public static ArrayList<String> arrayvalores;
+    public static ArrayList<condiciones> arraycon;
+    public static ArrayList<asignaciones> arrayasig;
+    public static ArrayList<String> paths;
+    public static ArrayList<String> tipo;
+//----------------------->
+    public static ArrayList<ArrayList> conditions;
+    public static ArrayList<ArrayList> colums;
+    public static ArrayList<ArrayList> values;
+    public static ArrayList<ArrayList> asig;
+
+   
+    public void syntax_error(Symbol s){
+    System.out.println("Error R de sintaxis: "+ s.value +" Linea "+(s.left+1)+" columna "+(s.right+1) );
+    }
+
+    public void unrecovered_syntax_error(Symbol s) throwsjava.lang.Exception{System.out.println("La Cadena:" +s.value+" en la Linea:"+(s.right+1) +" ,Columna: "+s.left+"esta fuera de contexto." ); }
+
+:}
+
+/* Terminals----------> */
+terminal           SELECT, FILTRAR, INSERT, UPDATE, ASIG,
+                   DELETE, PA, PC,POINT, IN, VALUES,COMILLAS,
+                   SPACE, COMA, END, IGUAL, NUMBER, Y ,O,MAYOR,
+                   MENOR, MAI, MEI,COM,ALL,ENTER;
+terminal String    ID, ERROR;
+
+/* Non-terminals------> */
+non terminal        sql,options, op, espacios, filtrar, equals, s1, s2,s3, s4,s5,s6,s7,s8,s9,s10,s11, s12, s13
+, i1,i2,i3,i4,i5,i6,i7,i8,u1, u2,u3,u4
+,d1,d2;
+
+
+
+
+/* The grammar */
+start with sql;
+//---------------> inicio sql
+sql ::=  options:e sql {:
+String tmp= (String)e;
+paths.add(tmp);
+:}
+|
+;
+
+//-------------> opciones
+options ::= 
+  SELECT:e SPACE espacios op:e2  {:RESULT= e+","+e2;:}
+| INSERT:e SPACE espacios i1:e2 {:RESULT= e+","+e2;:}
+| UPDATE:e SPACE espacios u1:e2 {:RESULT= e+","+e2;:}
+| DELETE:e SPACE espacios d1:e2 {:RESULT= e+","+e2;:}
+| error espacios op;
+
+
+
+/*
+*for select
+*/ 
+
+op  ::=  
+ s1:c  {: RESULT =c;:}
+| ALL:c SPACE espacios IN s2:e {:
+RESULT = e; 
+arraycolumnas.add(c); 
+:}
+| error IN s2
+;
+
+
+
+s1 ::=  ID:c espacios s10:e 
+{:
+RESULT = e;
+arraycolumnas.add(c);
+:}
+| error ID espacios;
+
+
+s10 ::=  COMA espacios s1:e {:
+RESULT = e;
+
+:}
+| IN SPACE espacios ID:e s11 
+
+{:
+RESULT = e;
+colums.add(arraycolumnas);
+:}
+
+| error COMA s1
+| error ID s11
+;
+
+
+
+s11 ::= END
+| filtrar
+| error ;
+    
+
+s2 ::= SPACE espacios ID:e s12  {: RESULT = e;
+
+:}
+| error ID s12;    
+
+s12 ::= espacios END 
+| filtrar 
+| error
+ ;
+
+filtrar ::= SPACE espacios FILTRAR s3 
+| error  FILTRAR s3
+ ;
+
+s3 ::= SPACE espacios ID:c espacios equals:op espacios s4:v s5 
+      {:
+      condiciones tmp=new condiciones((String)c,(String)v,(String)op);
+      arraycon.add(tmp);
+:}
+| error espacios s4
+| error ID espacios ;
+
+s4 ::= COMILLAS espacios ID:e espacios  COMILLAS  espacios {: RESULT = e; :}
+    |  NUMBER:e  espacios  {: RESULT = (String)e ;:}
+    | error COMILLAS espacios
+    | error NUMBER espacios;
+
+
+s5 ::= s6
+| s7
+| END espacios {:
+
+
+conditions.add(arraycon);
+
+:}
+ ; 
+
+s6 ::= Y SPACE ID:c espacios equals:op espacios s4:v s8     
+ {:
+      condiciones tmp=new condiciones((String)c,(String)v,(String)op,"AND");
+      arraycon.add(tmp);
+:}
+| error Y espacios
+| error espacios s4
+| error equals s4
+;
+
+s8 ::= END espacios {:
+ conditions.add(arraycon);
+
+:}
+| s6 ;
+
+s7 ::= O SPACE ID:c espacios equals:op espacios s4:v s9 {:
+ condiciones tmp=new condiciones((String)c,(String)v,(String)op,"OR");
+      arraycon.add(tmp);
+:}
+| error O SPACE
+| error ID espacios
+| error ID equals
+;
+    
+s9 ::= END espacios {:
+conditions.add(arraycon);:}
+| s7;
+
+
+/*
+end of select
+*/
+
+/*
+INSERT
+*/
+
+
+
+
+i1 ::= IN SPACE espacios i2:e {: RESULT = e;:}
+| error SPACE i2;
+
+i2 ::= ID:e SPACE espacios i3 {: RESULT = e;:}
+| error SPACE i3;
+
+i3 ::= VALUES espacios PA espacios i4
+
+| PA espacios i6
+| error espacios i4
+| error PA i6;
+
+
+i4 ::= COMILLAS espacios ID:e espacios COMILLAS espacios i5
+{:
+arrayvalores.add(e);
+:}
+| NUMBER:e espacios i5
+{:
+arrayvalores.add(e);
+:}
+| error ID espacios
+| error COMILLAS i5
+| error espacios i5
+| error NUMBER i5;
+
+
+i5 ::= COMA espacios i4
+| PC espacios END espacios {: values.add(arrayvalores);:}
+| error COMA espacios i4
+| error espacios i4;
+
+i6 ::= ID:e espacios i7 {:arraycolumnas.add(e);
+:}
+ | error  espacios i7   
+ | error ID espacios;
+
+
+
+
+i7 ::= COMA espacios i6
+| PC espacios i8 {: colums.add(arraycolumnas);:}
+| error espacios i6
+| error COMA espacios ;
+
+
+
+i8 ::= VALUES espacios PA espacios i4
+| error espacios i4
+| error PA i4;
+
+/*
+END --------->INSERT
+*/
+
+/*
+START --------->UPDATE
+*/
+
+u1 ::= IN SPACE espacios ID:e SPACE espacios ASIG SPACE espacios u2 {: RESULT = e;:}
+| error SPACE espacios
+| error ASIG u2
+
+; 
+
+u2 ::= ID:e1 espacios equals:e2 espacios u3:e3 {:
+arrayasig.add(new asignaciones((String)e1,(String)e3,(String)e2));
+:}
+| error ID espacios
+| error equals u3;
+
+u3 ::= COMILLAS espacios ID:e espacios COMILLAS  u4 {: RESULT = e;:}
+| NUMBER:e  u4 {: RESULT = e;:}
+| error COMILLAS espacios
+| error ID espacios
+| error NUMBER u4
+;
+
+u4 ::= espacios COMA espacios u2
+| filtrar {: 
+asig.add(arrayasig); :}
+| espacios END espacios
+| error  espacios u2
+;
+
+/*
+END --------->UPDATE
+*/
+
+/*
+START --------->DELETE
+*/
+d1 ::= IN SPACE espacios ID:e d2 {: RESULT = (String)e;:}
+| error IN espacios
+| error ID d2;
+
+d2 ::= filtrar
+| espacios END espacios
+| error filtrar
+| error END espacios
+;
+
+/*
+END --------->UPDATE
+*/
+
+
+
+// ---------------> estado de espacios
+espacios ::= SPACE espacios
+| 
+
+;
+equals ::=
+ MAYOR:e {: RESULT = (String)e;:}
+| MENOR:e {: RESULT = (String)e;:}
+| IGUAL:e {: RESULT = (String)e;:}
+| MAI:e {: RESULT = (String)e;:}
+| MEI:e {: RESULT = (String)e;:}
+
+;
